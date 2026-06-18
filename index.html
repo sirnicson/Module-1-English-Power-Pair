@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module 1: The Power Pair</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        subject: '#3B82F6', // Blue
+                        verb: '#EF4444',    // Red
+                        object: '#10B981',  // Green
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            overscroll-behavior: none;
+        }
+        
+        .word-block {
+            cursor: grab;
+            transition: all 0.2s ease;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .word-block:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .word-block.dragging {
+            opacity: 0.5;
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .drop-zone {
+            min-height: 100px;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            background-color: #e2e8f0;
+            border-color: #94a3b8;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+            border-color: #EF4444 !important;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .pop-success {
+            animation: pop 0.4s ease-in-out;
+            border-color: #10B981 !important;
+            background-color: #d1fae5 !important;
+        }
+
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .toast {
+            padding: 14px 20px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col items-center justify-center">
+
+    <div id="landing-page" class="absolute inset-0 z-50 flex flex-col items-center justify-center gradient-bg text-white px-4">
+        <div class="max-w-md w-full text-center">
+            <!-- Icon / Logo -->
+            <div class="w-32 h-32 mx-auto mb-8 bg-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-20 h-20 text-blue-400">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+                </svg>
+            </div>
+            
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">English<br><span class="text-blue-400">Power Pair</span></h1>
+            <p class="text-slate-300 text-lg mb-10">Master the foundation of English sentences for your daily life and business.</p>
+            
+            <button onclick="startGame()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xl py-4 px-8 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-all transform hover:scale-105 active:scale-95">
+                Start Module
+            </button>
+        </div>
+    </div>
+
+    <div id="game-interface" class="max-w-3xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden hidden w-[95%] md:w-full my-4">
+        
+        <!-- Header & Navigation -->
+        <div class="bg-slate-900 p-4 md:p-6 text-white flex items-center justify-between">
+            <button id="prev-btn" onclick="prevLevel()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+            </button>
+            
+            <div class="text-center">
+                <h1 class="text-xl font-bold tracking-tight hidden md:block">Lesson 1: The Power Pair</h1>
+                <div class="font-semibold text-blue-400 bg-slate-800 px-4 py-1.5 rounded-full text-sm mt-1 inline-block">
+                    Exercise <span id="current-level">1</span> of <span id="total-levels">30</span>
+                </div>
+            </div>
+
+            <button id="next-btn" onclick="nextLevel()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+            </button>
+        </div>
+
+        <!-- Legend -->
+        <div class="bg-slate-50 border-b border-slate-200 p-3 md:p-4 flex justify-center gap-4 text-xs md:text-sm font-semibold flex-wrap">
+            <div class="flex items-center gap-1.5 text-subject">
+                <div class="w-3 h-3 rounded-full bg-subject shadow-sm"></div> Person (Kim?)
+            </div>
+            <div class="flex items-center gap-1.5 text-verb">
+                <div class="w-3 h-3 rounded-full bg-verb shadow-sm"></div> Action (Ne yapar?)
+            </div>
+            <div class="flex items-center gap-1.5 text-object hidden transition-all" id="object-legend">
+                <div class="w-3 h-3 rounded-full bg-object shadow-sm"></div> Object (Neyi/Kimi?)
+            </div>
+        </div>
+
+        <div class="p-5 md:p-8">
+            
+            <!-- Context / Translation -->
+            <div class="mb-8 text-center bg-blue-50 py-4 rounded-xl border border-blue-100">
+                <h2 class="text-sm font-bold text-blue-400 uppercase tracking-wider mb-1">Translate this to English:</h2>
+                <p id="target-sentence" class="text-2xl md:text-3xl font-extrabold text-slate-800">Ben çalışırım.</p>
+            </div>
+
+            <!-- Sentence Drop Zone -->
+            <div class="mb-2 flex justify-between items-end">
+                <label class="text-sm font-bold text-slate-400 uppercase tracking-wider">Your Sentence</label>
+                <button id="reset-btn" class="text-xs text-slate-400 hover:text-slate-600 bg-slate-100 px-3 py-1 rounded-md transition-colors" onclick="resetLevel()">Reset Blocks</button>
+            </div>
+            <div id="sentence-zone" class="drop-zone w-full min-h-[100px] border-4 border-dashed border-slate-200 rounded-xl p-4 flex flex-wrap content-start gap-3 bg-slate-50 shadow-inner">
+                <!-- Dropped words appear here -->
+            </div>
+
+            <!-- Word Bank -->
+            <div class="mt-8">
+                <label class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 block">Word Bank (Pick the correct words)</label>
+                <div id="word-bank" class="drop-zone w-full min-h-[120px] flex flex-wrap gap-3 bg-white p-2 rounded-xl">
+                    <!-- JS populated blocks -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <script>
+        const levels = [
+            // Levels 1-2: Just S-V
+            {
+                turkish: "Ben çalışırım.", targetText: "I work", correctPattern: ["subject", "verb"], showObj: false,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "work", type: "verb" },
+                    { id: "w3", text: "sleep", type: "verb" }, { id: "w4", text: "She", type: "subject" }
+                ]
+            },
+            {
+                turkish: "O (kadın) araba kullanır.", targetText: "She drives", correctPattern: ["subject", "verb"], showObj: false,
+                words: [
+                    { id: "w1", text: "She", type: "subject" }, { id: "w2", text: "drives", type: "verb" },
+                    { id: "w3", text: "He", type: "subject" }, { id: "w4", text: "runs", type: "verb" }, { id: "w5", text: "I", type: "subject" }
+                ]
+            },
+            // Levels 3-30: S-V-O with specific distractor words
+            {
+                turkish: "Ben bir müşteri ararım.", targetText: "I call a client", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "call", type: "verb" }, { id: "w3", text: "a client", type: "object" },
+                    { id: "w4", text: "She", type: "subject" }, { id: "w5", text: "a car", type: "object" }, { id: "w6", text: "sells", type: "verb" }
+                ]
+            },
+            {
+                turkish: "O (erkek) bir fotoğraf paylaşır.", targetText: "He posts a photo", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "He", type: "subject" }, { id: "w2", text: "posts", type: "verb" }, { id: "w3", text: "a photo", type: "object" },
+                    { id: "w4", text: "I", type: "subject" }, { id: "w5", text: "buys", type: "verb" }, { id: "w6", text: "a video", type: "object" }
+                ]
+            },
+            {
+                turkish: "Biz arabayı satarız.", targetText: "We sell the car", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "We", type: "subject" }, { id: "w2", text: "sell", type: "verb" }, { id: "w3", text: "the car", type: "object" },
+                    { id: "w4", text: "They", type: "subject" }, { id: "w5", text: "wash", type: "verb" }, { id: "w6", text: "the house", type: "object" }
+                ]
+            },
+            {
+                turkish: "Sen bir video düzenlersin.", targetText: "You edit a video", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "You", type: "subject" }, { id: "w2", text: "edit", type: "verb" }, { id: "w3", text: "a video", type: "object" },
+                    { id: "w4", text: "I", type: "subject" }, { id: "w5", text: "watch", type: "verb" }, { id: "w6", text: "a photo", type: "object" }
+                ]
+            },
+            {
+                turkish: "Onlar bir daire kiralarlar.", targetText: "They rent an apartment", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "They", type: "subject" }, { id: "w2", text: "rent", type: "verb" }, { id: "w3", text: "an apartment", type: "object" },
+                    { id: "w4", text: "He", type: "subject" }, { id: "w5", text: "buy", type: "verb" }, { id: "w6", text: "a key", type: "object" }
+                ]
+            },
+            {
+                turkish: "Ben misafirleri karşılarım.", targetText: "I welcome the guests", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "welcome", type: "verb" }, { id: "w3", text: "the guests", type: "object" },
+                    { id: "w4", text: "We", type: "subject" }, { id: "w5", text: "call", type: "verb" }, { id: "w6", text: "the client", type: "object" }
+                ]
+            },
+            {
+                turkish: "O (kadın) fiyatı kontrol eder.", targetText: "She checks the price", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "She", type: "subject" }, { id: "w2", text: "checks", type: "verb" }, { id: "w3", text: "the price", type: "object" },
+                    { id: "w4", text: "He", type: "subject" }, { id: "w5", text: "pays", type: "verb" }, { id: "w6", text: "the money", type: "object" }
+                ]
+            },
+            {
+                turkish: "Ben bir araba alırım.", targetText: "I buy a car", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "buy", type: "verb" }, { id: "w3", text: "a car", type: "object" },
+                    { id: "w4", text: "You", type: "subject" }, { id: "w5", text: "sell", type: "verb" }, { id: "w6", text: "a house", type: "object" }
+                ]
+            },
+            {
+                turkish: "Biz kahve içeriz.", targetText: "We drink coffee", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "We", type: "subject" }, { id: "w2", text: "drink", type: "verb" }, { id: "w3", text: "coffee", type: "object" },
+                    { id: "w4", text: "They", type: "subject" }, { id: "w5", text: "eat", type: "verb" }, { id: "w6", text: "dinner", type: "object" }
+                ]
+            },
+            {
+                turkish: "O (erkek) anahtarları verir.", targetText: "He gives the keys", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "He", type: "subject" }, { id: "w2", text: "gives", type: "verb" }, { id: "w3", text: "the keys", type: "object" },
+                    { id: "w4", text: "She", type: "subject" }, { id: "w5", text: "takes", type: "verb" }, { id: "w6", text: "the phone", type: "object" }
+                ]
+            },
+            {
+                turkish: "Ben bir toplantı ayarlarım.", targetText: "I schedule a meeting", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "schedule", type: "verb" }, { id: "w3", text: "a meeting", type: "object" },
+                    { id: "w4", text: "We", type: "subject" }, { id: "w5", text: "cancel", type: "verb" }, { id: "w6", text: "a flight", type: "object" }
+                ]
+            },
+            {
+                turkish: "O (kadın) bir mesaj yazar.", targetText: "She writes a message", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "She", type: "subject" }, { id: "w2", text: "writes", type: "verb" }, { id: "w3", text: "a message", type: "object" },
+                    { id: "w4", text: "He", type: "subject" }, { id: "w5", text: "reads", type: "verb" }, { id: "w6", text: "a book", type: "object" }
+                ]
+            },
+            {
+                turkish: "Onlar sözleşmeyi imzalar.", targetText: "They sign the contract", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "They", type: "subject" }, { id: "w2", text: "sign", type: "verb" }, { id: "w3", text: "the contract", type: "object" },
+                    { id: "w4", text: "We", type: "subject" }, { id: "w5", text: "send", type: "verb" }, { id: "w6", text: "the email", type: "object" }
+                ]
+            },
+            {
+                turkish: "Ben wifi'yi bağlarım.", targetText: "I connect the wifi", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "connect", type: "verb" }, { id: "w3", text: "the wifi", type: "object" },
+                    { id: "w4", text: "You", type: "subject" }, { id: "w5", text: "disconnect", type: "verb" }, { id: "w6", text: "the tv", type: "object" }
+                ]
+            },
+            {
+                turkish: "Sen parayı ödersin.", targetText: "You pay the money", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "You", type: "subject" }, { id: "w2", text: "pay", type: "verb" }, { id: "w3", text: "the money", type: "object" },
+                    { id: "w4", text: "I", type: "subject" }, { id: "w5", text: "take", type: "verb" }, { id: "w6", text: "the card", type: "object" }
+                ]
+            },
+            {
+                turkish: "Biz evi temizleriz.", targetText: "We clean the house", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "We", type: "subject" }, { id: "w2", text: "clean", type: "verb" }, { id: "w3", text: "the house", type: "object" },
+                    { id: "w4", text: "They", type: "subject" }, { id: "w5", text: "dirty", type: "verb" }, { id: "w6", text: "the room", type: "object" }
+                ]
+            },
+            {
+                turkish: "O (erkek) arabayı yıkar.", targetText: "He washes the car", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "He", type: "subject" }, { id: "w2", text: "washes", type: "verb" }, { id: "w3", text: "the car", type: "object" },
+                    { id: "w4", text: "She", type: "subject" }, { id: "w5", text: "drives", type: "verb" }, { id: "w6", text: "the bus", type: "object" }
+                ]
+            },
+            {
+                turkish: "Ben uçuşu onaylarım.", targetText: "I confirm the flight", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "confirm", type: "verb" }, { id: "w3", text: "the flight", type: "object" },
+                    { id: "w4", text: "We", type: "subject" }, { id: "w5", text: "miss", type: "verb" }, { id: "w6", text: "the train", type: "object" }
+                ]
+            },
+            {
+                turkish: "O (kadın) takımı yönetir.", targetText: "She manages the team", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "She", type: "subject" }, { id: "w2", text: "manages", type: "verb" }, { id: "w3", text: "the team", type: "object" },
+                    { id: "w4", text: "He", type: "subject" }, { id: "w5", text: "leaves", type: "verb" }, { id: "w6", text: "the office", type: "object" }
+                ]
+            },
+            {
+                turkish: "Ben bir hikaye paylaşırım.", targetText: "I share a story", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "share", type: "verb" }, { id: "w3", text: "a story", type: "object" },
+                    { id: "w4", text: "You", type: "subject" }, { id: "w5", text: "delete", type: "verb" }, { id: "w6", text: "a comment", type: "object" }
+                ]
+            },
+            {
+                turkish: "Biz anlaşmayı yaparız.", targetText: "We make the deal", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "We", type: "subject" }, { id: "w2", text: "make", type: "verb" }, { id: "w3", text: "the deal", type: "object" },
+                    { id: "w4", text: "They", type: "subject" }, { id: "w5", text: "break", type: "verb" }, { id: "w6", text: "the glass", type: "object" }
+                ]
+            },
+            {
+                turkish: "Sen kapıyı açarsın.", targetText: "You open the door", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "You", type: "subject" }, { id: "w2", text: "open", type: "verb" }, { id: "w3", text: "the door", type: "object" },
+                    { id: "w4", text: "I", type: "subject" }, { id: "w5", text: "close", type: "verb" }, { id: "w6", text: "the window", type: "object" }
+                ]
+            },
+            {
+                turkish: "Onlar bir ev satın alır.", targetText: "They purchase a house", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "They", type: "subject" }, { id: "w2", text: "purchase", type: "verb" }, { id: "w3", text: "a house", type: "object" },
+                    { id: "w4", text: "He", type: "subject" }, { id: "w5", text: "sells", type: "verb" }, { id: "w6", text: "a bike", type: "object" }
+                ]
+            },
+            {
+                turkish: "Ben rezervasyonu iptal ederim.", targetText: "I cancel the booking", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "cancel", type: "verb" }, { id: "w3", text: "the booking", type: "object" },
+                    { id: "w4", text: "She", type: "subject" }, { id: "w5", text: "makes", type: "verb" }, { id: "w6", text: "a cake", type: "object" }
+                ]
+            },
+            {
+                turkish: "O (erkek) cüzdanını kaybeder.", targetText: "He loses his wallet", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "He", type: "subject" }, { id: "w2", text: "loses", type: "verb" }, { id: "w3", text: "his wallet", type: "object" },
+                    { id: "w4", text: "I", type: "subject" }, { id: "w5", text: "finds", type: "verb" }, { id: "w6", text: "her bag", type: "object" }
+                ]
+            },
+            {
+                turkish: "Biz akşam yemeği yeriz.", targetText: "We eat dinner", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "We", type: "subject" }, { id: "w2", text: "eat", type: "verb" }, { id: "w3", text: "dinner", type: "object" },
+                    { id: "w4", text: "They", type: "subject" }, { id: "w5", text: "cook", type: "verb" }, { id: "w6", text: "breakfast", type: "object" }
+                ]
+            },
+            {
+                turkish: "O (kadın) şehri sever.", targetText: "She loves the city", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "She", type: "subject" }, { id: "w2", text: "loves", type: "verb" }, { id: "w3", text: "the city", type: "object" },
+                    { id: "w4", text: "He", type: "subject" }, { id: "w5", text: "hates", type: "verb" }, { id: "w6", text: "the village", type: "object" }
+                ]
+            },
+            {
+                turkish: "Ben İngilizce öğrenirim.", targetText: "I learn English", correctPattern: ["subject", "verb", "object"], showObj: true,
+                words: [
+                    { id: "w1", text: "I", type: "subject" }, { id: "w2", text: "learn", type: "verb" }, { id: "w3", text: "English", type: "object" },
+                    { id: "w4", text: "You", type: "subject" }, { id: "w5", text: "speak", type: "verb" }, { id: "w6", text: "Turkish", type: "object" }
+                ]
+            }
+        ];
+
+        let currentLevelIndex = 0;
+        const sentenceZone = document.getElementById('sentence-zone');
+        const wordBank = document.getElementById('word-bank');
+        
+        const typeStyles = {
+            subject: 'bg-subject border-blue-700 text-white shadow-md hover:bg-blue-600',
+            verb: 'bg-verb border-red-700 text-white shadow-md hover:bg-red-600',
+            object: 'bg-object border-emerald-700 text-white shadow-md hover:bg-emerald-600'
+        };
+
+        function startGame() {
+            document.getElementById('landing-page').classList.add('hidden');
+            document.getElementById('game-interface').classList.remove('hidden');
+            renderLevel(currentLevelIndex);
+        }
+
+        function renderLevel(index) {
+            const level = levels[index];
+            document.getElementById('current-level').innerText = index + 1;
+            document.getElementById('target-sentence').innerText = level.turkish;
+            
+            // Update Navigation Buttons
+            document.getElementById('prev-btn').disabled = index === 0;
+            document.getElementById('next-btn').disabled = index === levels.length - 1;
+
+            // Toggle object legend for level 3 onwards
+            const objLegend = document.getElementById('object-legend');
+            if (level.showObj) {
+                objLegend.classList.remove('hidden');
+            } else {
+                objLegend.classList.add('hidden');
+            }
+
+            // Clear zones
+            sentenceZone.innerHTML = '';
+            wordBank.innerHTML = '';
+            sentenceZone.className = "drop-zone w-full min-h-[100px] border-4 border-dashed border-slate-200 rounded-xl p-4 flex flex-wrap content-start gap-3 bg-slate-50 shadow-inner";
+
+            // Render words shuffled (distractors included)
+            let shuffledWords = [...level.words].sort(() => Math.random() - 0.5);
+            
+            shuffledWords.forEach(word => {
+                const block = document.createElement('div');
+                block.id = word.id;
+                block.dataset.type = word.type;
+                block.innerText = word.text;
+                block.className = `word-block px-4 py-2 md:px-5 md:py-3 rounded-lg border-b-4 font-bold text-base md:text-lg ${typeStyles[word.type]}`;
+                
+                // Drag interactions
+                block.draggable = true;
+                block.addEventListener('dragstart', handleDragStart);
+                block.addEventListener('dragend', handleDragEnd);
+                
+                // Touch/Click interactions
+                block.addEventListener('click', handleBlockClick);
+
+                wordBank.appendChild(block);
+            });
+        }
+
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            if (!this.draggable) return;
+            draggedElement = this;
+            setTimeout(() => this.classList.add('dragging'), 0);
+            e.dataTransfer.setData('text/plain', this.id);
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            draggedElement = null;
+        }
+
+        const dropZones = [sentenceZone, wordBank];
+        
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                
+                const id = e.dataTransfer.getData('text/plain');
+                const draggable = document.getElementById(id);
+                
+                if (draggable && draggable.draggable) {
+                    zone.appendChild(draggable);
+                    checkSentence();
+                }
+            });
+        });
+
+        function handleBlockClick(e) {
+            const block = e.target;
+            if (!block.draggable) return;
+
+            if (block.parentElement.id === 'word-bank') {
+                sentenceZone.appendChild(block);
+            } else if (block.parentElement.id === 'sentence-zone') {
+                wordBank.appendChild(block);
+            }
+            checkSentence();
+        }
+
+        function checkSentence() {
+            const level = levels[currentLevelIndex];
+            const placedBlocks = Array.from(sentenceZone.children);
+            
+            // Only evaluate if they placed the correct NUMBER of words
+            if (placedBlocks.length < level.correctPattern.length) {
+                sentenceZone.classList.remove('pop-success', 'border-emerald-500');
+                return; 
+            }
+
+            const userText = placedBlocks.map(block => block.innerText).join(' ');
+            const userPattern = placedBlocks.map(block => block.dataset.type).join(',');
+            
+            // Validation 1: Exact string match (Success)
+            if (userText === level.targetText) {
+                handleSuccess();
+                return;
+            }
+
+            // Validation 2: Did they use the right structure but wrong words?
+            const correctPatternStr = level.correctPattern.join(',');
+            if (userPattern === correctPatternStr && placedBlocks.length === level.correctPattern.length) {
+                showToast("Perfect structure! But you picked the wrong words.", "error");
+                handleError();
+                return;
+            }
+
+            // Validation 3: The Turklish Trapdoor (S-O-V)
+            if (userPattern === "subject,object,verb" || userPattern.includes("object,verb")) {
+                showToast("🇹🇷 Turklish Detected! Action (Red) comes BEFORE Object (Green).", "error");
+                handleError();
+                return;
+            }
+
+            // Validation 4: Verb first error
+            if (userPattern.startsWith("verb")) {
+                showToast("Oops! The Person (Blue) must come first.", "error");
+                handleError();
+                return;
+            }
+
+            // Fallback for random wrong placements (only flag if they matched length)
+            if (placedBlocks.length >= level.correctPattern.length) {
+                showToast("Not quite right. Look at the colors!", "error");
+                handleError();
+            }
+        }
+
+        function handleSuccess() {
+            sentenceZone.classList.add('pop-success');
+            showToast("Perfect English! 🎉", "success");
+            
+            // Lock UI for the successful blocks
+            Array.from(sentenceZone.children).forEach(block => {
+                block.draggable = false;
+                block.classList.remove('cursor-grab', 'hover:bg-blue-600', 'hover:bg-red-600', 'hover:bg-emerald-600');
+                block.classList.add('cursor-default', 'opacity-90');
+            });
+
+            // Auto advance after short delay if not last level
+            setTimeout(() => {
+                if (currentLevelIndex < levels.length - 1) {
+                    nextLevel();
+                } else {
+                    sentenceZone.innerHTML = `<div class="w-full text-center py-6 text-emerald-600 font-extrabold text-2xl">🎉 Amazing job, Reyhan! You've mastered Phase 1!</div>`;
+                    document.getElementById('word-bank').innerHTML = '';
+                }
+            }, 1800);
+        }
+
+        function handleError() {
+            sentenceZone.classList.add('shake');
+            setTimeout(() => {
+                sentenceZone.classList.remove('shake');
+            }, 400);
+        }
+
+        function nextLevel() {
+            if (currentLevelIndex < levels.length - 1) {
+                currentLevelIndex++;
+                renderLevel(currentLevelIndex);
+            }
+        }
+
+        function prevLevel() {
+            if (currentLevelIndex > 0) {
+                currentLevelIndex--;
+                renderLevel(currentLevelIndex);
+            }
+        }
+
+        function resetLevel() {
+            renderLevel(currentLevelIndex);
+        }
+
+        function showToast(message, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-emerald-500' : 'bg-rose-500';
+            toast.className = `toast ${bgClass} flex items-center gap-3`;
+            
+            const icon = type === 'success' 
+                ? `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`
+                : `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+            
+            toast.innerHTML = `${icon} <span class="text-sm md:text-base">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 3.5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
